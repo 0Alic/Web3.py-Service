@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+
+  asset-tracker:
+    build: ./ContractService
+    volumes:
+      - ./ContractService:/usr/src/app
+    ports:
+      - 5001:80
+    depends_on:
+      - ganache
+
+  ganache:
+    build: ./ganache
+    volumes:
+      - ./ganache:/usr/src/app
+    ports:
+      - 8545:8545
