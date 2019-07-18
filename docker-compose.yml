@@ -2,13 +2,13 @@ version: '3'
 
 services:
 
-  init:
-    build: ./1_init
-    volumes:
-      - ./1_init:/usr/src/app
-    depends_on:
-      - ganache
-      
+  # init:
+  #   build: ./1_init
+  #   volumes:
+  #     - ./1_init:/usr/src/app
+  #   depends_on:
+  #     - ganache
+
   asset-tracker:
     build: ./ContractService
     volumes:

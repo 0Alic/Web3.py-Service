@@ -52,6 +52,7 @@ tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
 
 # Get reference to the new contract
 instance = web3.eth.contract(abi=abi, address=tx_receipt.contractAddress)
+print("Contract address >>>> ", tx_receipt.contractAddress)
 print("IdCount Should be 0 >>>> ", instance.functions.idCount().call())
 
 # Play with the contract
