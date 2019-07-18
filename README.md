@@ -16,7 +16,7 @@ Then, on the main folder run:
     docker-compose build
     docker-compose up
 
-This will set up ganache-cli as a local Ethereum blockchain and start the Python service, which exposes a Flask interface.
+This will set up ganache-cli as a local Ethereum blockchain, init the blockchain with a contract example (whose json representation is loaded from web) and start the Python service, which exposes a Flask interface.
 
 Go to the browser at: ``localhost:5001/`` to see if the service is connected to Ganache.
 

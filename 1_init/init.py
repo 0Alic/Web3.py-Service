@@ -22,10 +22,9 @@ alice = accounts[0]
 bob = accounts[1]
 
 """
-    Load contract from url
+    Load contract json from url
 """
 
-contractPath = './truffle/build/contracts/AssetTracker.json'
 urlPath = 'https://gist.githubusercontent.com/0Alic/e266f13b4b473932b6ee068fbfd73f0f/raw/1da9bf2ce7429bd834c726995e39a117169790ca/AssetTracker.json'
 abi = ""
 bytecode = ""
@@ -35,6 +34,7 @@ with urllib.request.urlopen(urlPath) as url:
     abi = obj["abi"]
     bytecode = obj["bytecode"]
 
+# contractPath = './truffle/build/contracts/AssetTracker.json'
 # with open(contractPath) as json_obj:
 #     contractObject = json.load(json_obj)
 #     abi = contractObject["abi"]
@@ -48,8 +48,22 @@ with urllib.request.urlopen(urlPath) as url:
 contract = web3.eth.contract(abi=abi, bytecode=bytecode)
 tx_hash = contract.constructor().transact({'from': alice})
 tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
-print(tx_receipt)
+#print(tx_receipt)
 
 # Get reference to the new contract
 instance = web3.eth.contract(abi=abi, address=tx_receipt.contractAddress)
-print(">>>> ", instance.functions.idCount().call())
+print("IdCount Should be 0 >>>> ", instance.functions.idCount().call())
+
+# Play with the contract
+tx_hash = instance.functions.obtainOwnership("Smart Box").transact({'from': alice, 'value': web3.toWei(0.001, 'ether')})
+tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
+asset = instance.functions.getAsset(alice).call()
+print("Alice's asset data: ", asset)
+
+tx_hash = instance.functions.transferOwnership(bob).transact({'from': alice})
+tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
+asset = instance.functions.getAsset(alice).call()
+print("Alice's asset data: ", asset)
+asset = instance.functions.getAsset(bob).call()
+print("Bob's asset data: ", asset)
+print("IdCount Should be 1 >>>> ", instance.functions.idCount().call())
