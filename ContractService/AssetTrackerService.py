@@ -1,8 +1,10 @@
 import json
 import urllib.request
+from ethereumUtilities import EthereumUtilities
 from web3 import Web3
-from flask import Flask
+from flask import Flask, request, jsonify, make_response
 from flask_restful import Resource, Api
+from requests import put, get
 
 app = Flask(__name__)
 api = Api(app)
@@ -12,76 +14,53 @@ api = Api(app)
 """
 
 contracts = dict()
+web3 = None
+userMap = dict()
+
+"""
+    API configuration server parameters
+"""
+
+# TODO read from config file?
+host = "http://config:"
+port = 80
+route = host + str(port)
+tracker = "tracker"
 
 """
     Init Web3 and load contract
 """
 
-ganache_url = 'http://ganache:8545'
-web3 = Web3(Web3.HTTPProvider(ganache_url))
+web3 = EthereumUtilities.LoadWeb3(provider='http://ganache', port='8545')
 
 accounts = web3.eth.accounts
-alice = accounts[0]
-bob = accounts[1]
-carl = accounts[2]
-dave = accounts[3]
-
-print("alice  ", alice)
-print("bob  ", bob)
-print("calr  ", carl)
-print("dave  ", dave)
-
+userMap = {
+    "alice": accounts[0],
+    "bob": accounts[1],
+    "carl": accounts[2],
+    "dave": accounts[3]
+}
 
 urlPath = 'https://gist.githubusercontent.com/0Alic/e266f13b4b473932b6ee068fbfd73f0f/raw/1da9bf2ce7429bd834c726995e39a117169790ca/AssetTracker.json'
-abi = ""
-bytecode = ""
-
-with urllib.request.urlopen(urlPath) as url:
-    obj = json.loads(url.read().decode())
-    abi = obj["abi"]
-    bytecode = obj["bytecode"]
+contractInfo = EthereumUtilities.LoadContractInformation(webUrl=urlPath)
 
 """
-    Define initialization
+    Initialization
 """
-instace_address = ""
 
 def init():
 
-    #Create contract object    
-    contract = web3.eth.contract(abi=abi, bytecode=bytecode)
-    tx_hash = contract.constructor().transact({'from': alice})
-    tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
-    print("Contract address >>>> ", tx_receipt.contractAddress)
-
     # Get reference to the new contract
-    instance = web3.eth.contract(abi=abi, address=tx_receipt.contractAddress)
-    print("IdCount Should be 0 >>>> ", instance.functions.idCount().call())
-
-    # Play with the contract
-    tx_hash = instance.functions.obtainOwnership("Smart Box").transact({'from': alice, 'value': web3.toWei(0.001, 'ether')})
-    tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
-    asset = instance.functions.getAsset(alice).call()
-    print("Alice's asset data: ", asset)
-
-    tx_hash = instance.functions.transferOwnership(bob).transact({'from': alice})
-    tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
-    asset = instance.functions.getAsset(alice).call()
-    print("Alice's asset data: ", asset)
-    asset = instance.functions.getAsset(bob).call()
-    print("Bob's asset data: ", asset)
-    print("IdCount Should be 1 >>>> ", instance.functions.idCount().call())
-
-    # Store contract in "contracts" dict
-    contracts[str(instance.address)] =  instance
-    instace_address = str(instance.address)
-    print(instace_address)
-    contracts['0'] =  instance
-
-    print(contracts)
+        # Retrieve the address from the configuration server
+    api_response = get(route + "/"+tracker).json()
+    address = api_response["result"]
+        # Get the instance from Ethereum
+    instance = web3.eth.contract(abi=contractInfo['abi'], address=address)
+        # Store it somewhere
+    contracts["tracker"] = instance
 
 """
-    Define REST routes
+    Define REST services
 """
 
 class Connection(Resource):
@@ -94,55 +73,65 @@ class Connection(Resource):
             'number': number    
         }
 
+# TODO Temp solution, address the contract with a predefined name
 class GetAsset(Resource):
 
-    def get(self, address, account):
+    def get(self, contract, sender):
 
-        instance = contracts[Web3.toChecksumAddress(address)]
+        instance = contracts[str(contract)]
+        account = userMap[str(sender)]
         asset = instance.functions.getAsset(Web3.toChecksumAddress(account)).call()
         return {'result': asset}
 
 class IdCount(Resource):
 
-    def get(self, key):
+    def get(self, contract):
                     
-       instance = contracts[Web3.toChecksumAddress(key)]
-       return {'idCount': instance.functions.idCount().call()}
-        
+        instance = contracts[str(contract)]
+        return {'idCount': instance.functions.idCount().call()}
+         
 class ObtainOwnership(Resource):
 
-    def get(self, address, name):
+    def put(self, contract):
 
-        instance = contracts[Web3.toChecksumAddress(address)]
-        tx_hash = instance.functions.obtainOwnership(name).transact({'from': alice, 'value': web3.toWei(0.001, 'ether')})
+        sender = request.form['sender']
+        assetName = request.form['assetName']
+
+        instance = contracts[str(contract)]
+        sender = Web3.toChecksumAddress(userMap[str(sender)])
+
+        tx_hash = instance.functions.obtainOwnership(assetName).transact({'from': sender, 'value': web3.toWei(0.001, 'ether')})
         tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
 
-        return {'receipt': tx_receipt}
+        # TODO Trovare il modo per serializzare la receipt
+        return {'receipt': "tx_receipt" }
 
 #TODO
 ## return {tx_receipt  non funziona
-## Inserisci mittente come paramentro
-## Fai tabella stringa -> indirizzo per semplificare lo sviluppo
 class TransferOwnership(Resource):
 
-    def get(self, address, to):
+    def put(self, contract):
 
-        instance = contracts[Web3.toChecksumAddress(address)]
-        tx_hash = instance.functions.transferOwnership(Web3.toChecksumAddress(to)).transact({'from': alice})
+        sender = Web3.toChecksumAddress(userMap[request.form['sender']])
+        to = Web3.toChecksumAddress(userMap[request.form['to']])
+
+        instance = contracts[str(contract)]
+
+        tx_hash = instance.functions.transferOwnership(to).transact({'from': sender})
         tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
 
-        return {'receipt': tx_receipt}
+        # TODO Trovare il modo per serializzare la receipt
+        return {'receipt': "tx_receipt" }
 
 """
     Add services
 """
 
-
 api.add_resource(Connection, '/')
-api.add_resource(IdCount, '/idCount/<key>')
-api.add_resource(GetAsset, '/get/<address>/<account>')
-api.add_resource(ObtainOwnership, '/obtain/<address>/<name>')
-api.add_resource(TransferOwnership, '/transfer/<address>/<to>')
+api.add_resource(IdCount, '/idCount/<contract>')
+api.add_resource(GetAsset, '/get/<contract>/<sender>')
+api.add_resource(ObtainOwnership, '/obtain/<contract>')
+api.add_resource(TransferOwnership, '/transfer/<contract>')
 
 if __name__ == '__main__':
     
