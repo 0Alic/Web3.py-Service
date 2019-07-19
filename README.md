@@ -28,14 +28,21 @@ This will set up ganache-cli as a local Ethereum blockchain, init the blockchain
 
 Go to the browser at: ``localhost:5001/`` to see if the service is connected to ganache-cli.
 
+## Services
+
+- **config_manager**: service which should manage configuration file and data that should be exchanged betweeen services running in Docker;
+- **asset-tracker**: service interacting with the AssetTracker smart contract;
+
 ## :construction: TODO :construction:
 
-- [ ] At the moment the REST script deploys the contract in ganache-cli. It may be better to do that in an initialization script, separated
+- [X] At the moment the REST script deploys the contract in ganache-cli. It may be better to do that in an initialization script, separated
 
 - [ ] Include a client script for testing
 
 - [ ] Find a way to simplify the insertion of Eth addresses
+    - [X] A small map name-address to simplify with the insertion of data during testing
 
+- [ ] Include Solidity's events listener
 
 ## What helped me
 
