@@ -17,15 +17,25 @@ services:
       - ganache
       - config
 
-  asset-tracker:
-    build: ./ContractService
+  listener:
+    build: ./listener
     volumes:
-      - ./ContractService:/usr/src/app
+      - ./listener:/usr/src/app
+    ports:
+      - 80:80
+    depends_on:
+      - init
+
+  asset-tracker:
+    build: ./asset-tracker
+    volumes:
+      - ./asset-tracker:/usr/src/app
     ports:
       - 5001:80
     depends_on:
       - ganache
       - init
+      - listener
 
   ganache:
     build: ./ganache

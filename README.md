@@ -32,6 +32,7 @@ Go to the browser at: ``localhost:5001/`` to see if the service is connected to 
 
 - **config_manager**: service which should manage configuration file and data that should be exchanged betweeen services running in Docker;
 - **asset-tracker**: service interacting with the AssetTracker smart contract;
+- **listener**: an example of service listening to Ethereum's contract events;
 
 ## :construction: TODO :construction:
 
