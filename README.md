@@ -38,12 +38,12 @@ Go to the browser at: ``localhost:5001/`` to see if the service is connected to 
 
 - [X] At the moment the REST script deploys the contract in ganache-cli. It may be better to do that in an initialization script, separated
 
-- [ ] Include a client script for testing
+- [ ] Include a client script for testing (using Postman at the moment)
 
 - [ ] Find a way to simplify the insertion of Eth addresses
     - [X] A small map name-address to simplify with the insertion of data during testing
 
-- [ ] Include Solidity's events listener
+- [X] Include Solidity's events listener
 
 ## What helped me
 
